@@ -1,0 +1,13 @@
+{
+  "name": "dotnet-template",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently --kill-others-on-fail --names api,web --prefix-colors blue,green \"dotnet watch --project src/DotnetTemplate.Api run --launch-profile http\" \"npm --prefix apps/frontend run dev\"",
+    "dev:api": "dotnet watch --project src/DotnetTemplate.Api run --launch-profile http",
+    "dev:web": "npm --prefix apps/frontend run dev",
+    "postinstall": "npm --prefix apps/frontend install"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
