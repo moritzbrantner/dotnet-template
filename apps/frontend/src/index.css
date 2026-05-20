@@ -1,40 +1,12 @@
-:root {
-  font-family: "Avenir Next", "Segoe UI", sans-serif;
-  color: #1d2730;
-  background: #f6efe5;
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
 * {
   box-sizing: border-box;
 }
 
 html {
+  min-height: 100%;
   scroll-behavior: smooth;
-}
-
-body {
-  margin: 0;
-}
-
-button,
-input,
-select,
-textarea {
-  font: inherit;
-}
-
-button {
-  cursor: pointer;
 }
 
 #root {
   min-height: 100vh;
-}
-
-code {
-  font-family: "IBM Plex Mono", "SFMono-Regular", monospace;
 }

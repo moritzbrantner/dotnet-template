@@ -1,6 +1,42 @@
 @DotnetTemplate.Api_HostAddress = http://localhost:5088
 
-GET {{DotnetTemplate.Api_HostAddress}}/weatherforecast/
+GET {{DotnetTemplate.Api_HostAddress}}/api/health
 Accept: application/json
+
+###
+
+GET {{DotnetTemplate.Api_HostAddress}}/api/dev-state?persona=admin
+Accept: application/json
+
+###
+
+GET {{DotnetTemplate.Api_HostAddress}}/api/notes
+Accept: application/json
+
+###
+
+POST {{DotnetTemplate.Api_HostAddress}}/api/notes
+Content-Type: application/json
+
+{
+  "message": "Persist this starter note",
+  "createdBy": "Local developer",
+  "persona": "admin"
+}
+
+###
+
+PUT {{DotnetTemplate.Api_HostAddress}}/api/notes/1
+Content-Type: application/json
+
+{
+  "message": "Update this starter note",
+  "createdBy": "Local developer",
+  "persona": "member"
+}
+
+###
+
+DELETE {{DotnetTemplate.Api_HostAddress}}/api/notes/1
 
 ###

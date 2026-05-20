@@ -1,0 +1,10 @@
+.git
+.gitignore
+node_modules
+apps/frontend/node_modules
+apps/frontend/dist
+src/**/bin
+src/**/obj
+**/.DS_Store
+**/.idea
+**/.vscode

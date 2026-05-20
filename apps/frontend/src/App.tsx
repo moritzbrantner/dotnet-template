@@ -1,161 +1,239 @@
-import { useEffect, useState } from 'react'
-import './App.css'
-import { loadDevState } from './api'
+import type { ReactNode } from 'react'
+import { observer } from 'mobx-react-lite'
+import {
+  Alert,
+  alpha,
+  Box,
+  Button,
+  Chip,
+  CircularProgress,
+  Divider,
+  IconButton,
+  List,
+  ListItem,
+  ListItemButton,
+  MenuItem,
+  Paper,
+  Stack,
+  TextField,
+  Tooltip,
+  Typography,
+} from '@mui/material'
+import CancelRounded from '@mui/icons-material/CancelRounded'
+import CheckRounded from '@mui/icons-material/CheckRounded'
+import DeleteRounded from '@mui/icons-material/DeleteRounded'
+import EditRounded from '@mui/icons-material/EditRounded'
+import NotificationsRounded from '@mui/icons-material/NotificationsRounded'
+import PersonRounded from '@mui/icons-material/PersonRounded'
+import SaveRounded from '@mui/icons-material/SaveRounded'
+import ShieldRounded from '@mui/icons-material/ShieldRounded'
+import StorageRounded from '@mui/icons-material/StorageRounded'
+import { personas, useAppStore } from './app-store'
 import type {
   ActivityItem,
   AdminState,
   DevState,
-  NavigationCategory,
-  NavigationItem,
-  Persona,
   TeamMember,
+  WorkspaceNote,
 } from './types'
 
-const personas: Persona[] = ['user', 'member', 'admin', 'anonymous', 'error']
+const surfaceSx = {
+  p: 3,
+  borderRadius: 6,
+  backgroundColor: 'background.paper',
+}
 
-function App() {
-  const [persona, setPersona] = useState<Persona>('user')
-  const [state, setState] = useState<DevState | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [currentPath, setCurrentPath] = useState('/overview')
-
-  useEffect(() => {
-    let cancelled = false
-
-    setLoading(true)
-    setError(null)
-
-    loadDevState(persona)
-      .then((nextState) => {
-        if (cancelled) {
-          return
-        }
-
-        setState(nextState)
-      })
-      .catch((caughtError: unknown) => {
-        if (cancelled) {
-          return
-        }
-
-        setError(caughtError instanceof Error ? caughtError.message : 'Failed to load starter state.')
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setLoading(false)
-        }
-      })
-
-    return () => {
-      cancelled = true
-    }
-  }, [persona])
-
-  useEffect(() => {
-    if (state && !hasNavigationItem(state.navigation, currentPath)) {
-      setCurrentPath(getDefaultPath(state.navigation))
-    }
-  }, [currentPath, state])
-
-  const selectedItem = state ? findNavigationItem(state.navigation, currentPath) : null
-  const notificationCount = state?.notifications?.unreadCount ?? 0
-  const isAuthenticated = state?.session.status === 'authenticated'
+const App = observer(function App() {
+  const appStore = useAppStore()
+  const {
+    currentPath,
+    error,
+    isAuthenticated,
+    loading,
+    notificationCount,
+    persona,
+    selectedItem,
+    state,
+  } = appStore
 
   return (
-    <div className="app-shell">
-      <aside className="sidebar">
-        <div className="brand-block">
-          <p className="eyebrow">frontend-ui starter</p>
-          <h1>Orbit Console</h1>
-          <p className="brand-copy">
-            A self-contained frontend and .NET Web API based on the account, team, settings, and admin
-            surfaces from <code>@moritzbrantner/frontend-ui</code>.
-          </p>
-        </div>
+    <Box
+      sx={{
+        minHeight: '100vh',
+        display: 'grid',
+        gridTemplateColumns: { xs: '1fr', lg: '320px minmax(0, 1fr)' },
+        gap: 2,
+        p: { xs: 2, md: 3 },
+      }}
+    >
+      <Paper
+        sx={{
+          ...surfaceSx,
+          position: { lg: 'sticky' },
+          top: { lg: 24 },
+          alignSelf: 'start',
+          backgroundColor: alpha('#10212c', 0.9),
+          color: '#edf5f7',
+        }}
+      >
+        <Stack spacing={3}>
+          <Stack spacing={1.5}>
+            <Typography variant="overline" sx={{ color: '#ffb197' }}>
+              frontend-ui starter
+            </Typography>
+            <Typography variant="h4">Orbit Console</Typography>
+            <Typography sx={{ color: 'rgba(237, 245, 247, 0.8)', lineHeight: 1.6 }}>
+              A Material UI shell backed by the .NET Web API, with local Postgres persistence for workspace notes.
+            </Typography>
+          </Stack>
 
-        <div className="persona-panel">
-          <p className="section-label">Persona</p>
-          <div className="persona-grid">
-            {personas.map((option) => (
-              <button
-                key={option}
-                type="button"
-                className={option === persona ? 'persona-button active' : 'persona-button'}
-                onClick={() => setPersona(option)}
-              >
-                {option}
-              </button>
+          <Stack spacing={1.25}>
+            <Typography variant="overline" sx={{ color: '#ffb197' }}>
+              Persona
+            </Typography>
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                gap: 1,
+              }}
+            >
+              {personas.map((option) => (
+                <Button
+                  key={option}
+                  variant={option === persona ? 'contained' : 'outlined'}
+                  color={option === persona ? 'secondary' : 'inherit'}
+                  onClick={() => appStore.setPersona(option)}
+                  sx={{
+                    justifyContent: 'flex-start',
+                    borderRadius: 4,
+                    borderColor: 'rgba(255,255,255,0.18)',
+                    color: option === persona ? '#17212b' : '#edf5f7',
+                    backgroundColor: option === persona ? 'secondary.light' : 'rgba(255,255,255,0.04)',
+                  }}
+                >
+                  {option}
+                </Button>
+              ))}
+            </Box>
+          </Stack>
+
+          <Stack spacing={1.25}>
+            <Typography variant="overline" sx={{ color: '#ffb197' }}>
+              Navigation
+            </Typography>
+            {state?.navigation.map((category) => (
+              <Box key={category.key}>
+                <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                  {category.label}
+                </Typography>
+                <List disablePadding sx={{ display: 'grid', gap: 0.75 }}>
+                  {category.items.map((item) => (
+                    <ListItem key={item.key} disablePadding>
+                      <ListItemButton
+                        selected={item.href === currentPath}
+                        onClick={() => appStore.setCurrentPath(item.href)}
+                        sx={{
+                          borderRadius: 4,
+                          alignItems: 'flex-start',
+                          px: 1.5,
+                          py: 1.25,
+                          '&.Mui-selected': {
+                            backgroundColor: alpha('#ff7d5f', 0.28),
+                          },
+                          '&.Mui-selected:hover': {
+                            backgroundColor: alpha('#ff7d5f', 0.36),
+                          },
+                        }}
+                      >
+                        <Stack spacing={0.25}>
+                          <Typography sx={{ fontWeight: 700 }}>{item.label}</Typography>
+                          <Typography variant="body2" sx={{ color: 'rgba(237, 245, 247, 0.78)' }}>
+                            {item.description}
+                          </Typography>
+                        </Stack>
+                      </ListItemButton>
+                    </ListItem>
+                  ))}
+                </List>
+              </Box>
             ))}
-          </div>
-        </div>
+          </Stack>
+        </Stack>
+      </Paper>
 
-        <nav className="navigation-panel" aria-label="Primary navigation">
-          <p className="section-label">Navigation</p>
-          {state?.navigation.map((category) => (
-            <section key={category.key} className="nav-category">
-              <h2>{category.label}</h2>
-              <div className="nav-list">
-                {category.items.map((item) => (
-                  <button
-                    key={item.key}
-                    type="button"
-                    className={item.href === currentPath ? 'nav-item active' : 'nav-item'}
-                    onClick={() => setCurrentPath(item.href)}
-                  >
-                    <strong>{item.label}</strong>
-                    <span>{item.description}</span>
-                  </button>
-                ))}
-              </div>
-            </section>
-          ))}
-        </nav>
-      </aside>
+      <Box sx={{ display: 'grid', gap: 2 }}>
+        <Paper
+          sx={{
+            ...surfaceSx,
+            display: 'flex',
+            flexDirection: { xs: 'column', xl: 'row' },
+            justifyContent: 'space-between',
+            gap: 2,
+          }}
+        >
+          <Stack spacing={1.25}>
+            <Typography variant="overline" color="secondary.main">
+              Starter dashboard
+            </Typography>
+            <Typography variant="h3">{selectedItem?.label ?? 'Overview'}</Typography>
+            <Typography sx={{ maxWidth: 760, lineHeight: 1.7 }}>
+              Role-aware navigation, guarded rendering, notification state, and a persisted Postgres-backed notes
+              panel all live in the same starter shell now.
+            </Typography>
+          </Stack>
 
-      <main className="main-panel">
-        <header className="hero-panel">
-          <div>
-            <p className="eyebrow">Starter dashboard</p>
-            <h2>{selectedItem?.label ?? 'Overview'}</h2>
-            <p className="hero-copy">
-              Role-aware navigation, guarded rendering, notification state, and administration surfaces all come
-              from the matching Web API.
-            </p>
-          </div>
+          <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap' }}>
+            <StatusPill label="Session" value={appStore.sessionStatusLabel} icon={<ShieldRounded fontSize="small" />} />
+            <StatusPill label="Persona" value={persona} icon={<PersonRounded fontSize="small" />} />
+            <StatusPill label="Alerts" value={String(notificationCount)} icon={<NotificationsRounded fontSize="small" />} />
+            <StatusPill label="Storage" value="Postgres" icon={<StorageRounded fontSize="small" />} />
+          </Stack>
+        </Paper>
 
-          <div className="hero-meta">
-            <StatusPill label="Session" value={formatSessionStatus(state?.session.status)} />
-            <StatusPill label="Persona" value={persona} />
-            <StatusPill label="Alerts" value={String(notificationCount)} />
-          </div>
-        </header>
+        {error ? <Alert severity="error">Starter state request failed: {error}</Alert> : null}
 
-        {error ? <ErrorBanner message={error} /> : null}
-
-        {loading ? <LoadingState /> : null}
+        {loading ? (
+          <Paper sx={{ ...surfaceSx, display: 'flex', alignItems: 'center', gap: 2 }}>
+            <CircularProgress size={24} />
+            <Typography>Loading starter shell...</Typography>
+          </Paper>
+        ) : null}
 
         {!loading && state ? (
           <>
-            <section className="overview-strip">
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr', xl: '1.2fr 1.8fr' },
+                gap: 2,
+              }}
+            >
               <AccountCard state={state} />
               <MetricsPanel metrics={state.metrics} />
-            </section>
+            </Box>
 
-            <section className="content-grid">
-              <div className="primary-column">{renderPage(currentPath, state)}</div>
-              <aside className="secondary-column">
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr', xl: 'minmax(0, 1.65fr) minmax(320px, 0.95fr)' },
+                gap: 2,
+              }}
+            >
+              <Box>{renderPage(currentPath, state)}</Box>
+              <Stack spacing={2}>
                 <ActivityPanel activity={state.activity} />
                 <ApiContractPanel state={state} />
+                <WorkspaceNotesPanel />
                 {isAuthenticated ? <PermissionPanel permissions={state.session.user!.permissions} /> : null}
-              </aside>
-            </section>
+              </Stack>
+            </Box>
           </>
         ) : null}
-      </main>
-    </div>
+      </Box>
+    </Box>
   )
-}
+})
 
 function renderPage(currentPath: string, state: DevState) {
   switch (currentPath) {
@@ -176,44 +254,33 @@ function renderPage(currentPath: string, state: DevState) {
 
 function OverviewPage({ state }: { state: DevState }) {
   return (
-    <section className="page-section">
-      <div className="section-heading">
-        <p className="eyebrow">Workspace</p>
-        <h3>Overview</h3>
-        <p>
-          The backend pre-filters starter data by persona. Anonymous and error sessions keep the shell public,
-          while authenticated personas unlock progressively broader account and admin views.
-        </p>
-      </div>
+    <Stack spacing={2}>
+      <SectionHeading
+        eyebrow="Workspace"
+        title="Overview"
+        copy="The backend still pre-filters starter data by persona, while the frontend now renders it with Material UI surfaces instead of a custom CSS shell."
+      />
 
-      <div className="feature-grid">
-        <article className="feature-card accent-card">
-          <p className="section-label">Starter principles</p>
-          <ul className="detail-list">
-            <li>Guarded rendering derived from the session status.</li>
-            <li>Navigation categories filtered before the UI renders them.</li>
-            <li>Settings sections vary by role instead of being hidden client-side only.</li>
-          </ul>
-        </article>
-
-        <article className="feature-card">
-          <p className="section-label">Notifications</p>
-          <h4>{state.notifications?.unreadCount ?? 0} unread alerts</h4>
-          <p>
-            Admins surface a higher alert count and additional audit activity, matching the backend persona state.
-          </p>
-        </article>
-
-        <article className="feature-card">
-          <p className="section-label">API surface</p>
-          <h4>`/api/dev-state`</h4>
-          <p>
-            The frontend fetches one starter payload, with additional matching endpoints for session, settings,
-            followers, and navigation.
-          </p>
-        </article>
-      </div>
-    </section>
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: { xs: '1fr', md: 'repeat(3, minmax(0, 1fr))' },
+          gap: 2,
+        }}
+      >
+        <FeatureCard
+          eyebrow="Starter principles"
+          title="Guarded views"
+          copy="Navigation, settings, and admin areas are all filtered from the backend before the UI renders them."
+        />
+        <FeatureCard
+          eyebrow="Notifications"
+          title={`${state.notifications?.unreadCount ?? 0} unread alerts`}
+          copy="Admin personas surface more alert volume and additional audit activity from the same starter payload."
+        />
+        <FeatureCard eyebrow="Persistence" title="/api/notes" copy="Workspace notes are stored in local Postgres and rendered back into the shell." />
+      </Box>
+    </Stack>
   )
 }
 
@@ -225,59 +292,41 @@ function ProfilePage({ state }: { state: DevState }) {
   const user = state.session.user!
 
   return (
-    <section className="page-section">
-      <div className="section-heading">
-        <p className="eyebrow">Account</p>
-        <h3>{user.displayName}</h3>
-        <p>{user.bio}</p>
-      </div>
+    <Stack spacing={2}>
+      <SectionHeading eyebrow="Account" title={user.displayName} copy={user.bio} />
 
-      <div className="profile-summary">
-        <article className="feature-card">
-          <p className="section-label">Identity</p>
-          <h4>@{user.username}</h4>
-          <p>{user.title}</p>
-          <div className="chip-row">
-            {user.roles.map((role) => (
-              <span key={role} className="chip">
-                {role}
-              </span>
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' }, gap: 2 }}>
+        <FeatureCard
+          eyebrow="Identity"
+          title={`@${user.username}`}
+          copy={user.title}
+          footer={
+              <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap' }}>
+                {user.roles.map((role) => (
+                  <Chip key={role} label={role} color="secondary" variant="outlined" />
+                ))}
+            </Stack>
+          }
+        />
+        <FeatureCard eyebrow="Locale" title={user.locale} copy={`${user.timezone} · ${user.email}`} />
+      </Box>
+
+      <Paper sx={surfaceSx}>
+        <Stack spacing={2}>
+          <SectionHeading eyebrow="Followers" title={`${state.followers.length} connected profiles`} compact />
+          <Stack spacing={1.5}>
+            {state.followers.map((follower) => (
+              <ListRow
+                key={follower.id}
+                title={follower.displayName}
+                subtitle={`@${follower.username} · ${follower.title}`}
+                meta={[follower.relationship, follower.visibility]}
+              />
             ))}
-          </div>
-        </article>
-
-        <article className="feature-card">
-          <p className="section-label">Locale</p>
-          <h4>{user.locale}</h4>
-          <p>{user.timezone}</p>
-          <p>{user.email}</p>
-        </article>
-      </div>
-
-      <div className="list-section">
-        <div className="section-heading compact">
-          <p className="eyebrow">Followers</p>
-          <h3>{state.followers.length} connected profiles</h3>
-        </div>
-
-        <div className="stack">
-          {state.followers.map((follower) => (
-            <article key={follower.id} className="list-card">
-              <div>
-                <strong>{follower.displayName}</strong>
-                <p>
-                  @{follower.username} · {follower.title}
-                </p>
-              </div>
-              <div className="list-meta">
-                <span className="chip subtle">{follower.relationship}</span>
-                <span className="chip subtle">{follower.visibility}</span>
-              </div>
-            </article>
-          ))}
-        </div>
-      </div>
-    </section>
+          </Stack>
+        </Stack>
+      </Paper>
+    </Stack>
   )
 }
 
@@ -287,27 +336,30 @@ function TeamPage({ members }: { members: TeamMember[] }) {
   }
 
   return (
-    <section className="page-section">
-      <div className="section-heading">
-        <p className="eyebrow">Collaboration</p>
-        <h3>Team operating model</h3>
-        <p>Representative team cards aligned with the same persona-driven starter contract as the rest of the shell.</p>
-      </div>
+    <Stack spacing={2}>
+      <SectionHeading
+        eyebrow="Collaboration"
+        title="Team operating model"
+        copy="Representative team cards aligned with the same persona-driven starter contract as the rest of the shell."
+      />
 
-      <div className="team-grid">
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' }, gap: 2 }}>
         {members.map((member) => (
-          <article key={member.id} className="feature-card">
-            <p className="section-label">{member.role}</p>
-            <h4>{member.displayName}</h4>
-            <p>{member.focus}</p>
-            <div className="chip-row">
-              <span className="chip subtle">{member.availability}</span>
-              <span className="chip subtle">{member.timezone}</span>
-            </div>
-          </article>
+          <FeatureCard
+            key={member.id}
+            eyebrow={member.role}
+            title={member.displayName}
+            copy={member.focus}
+            footer={
+              <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap' }}>
+                <Chip label={member.availability} variant="outlined" />
+                <Chip label={member.timezone} variant="outlined" />
+              </Stack>
+            }
+          />
         ))}
-      </div>
-    </section>
+      </Box>
+    </Stack>
   )
 }
 
@@ -317,41 +369,27 @@ function SettingsPage({ state }: { state: DevState }) {
   }
 
   return (
-    <section className="page-section">
-      <div className="section-heading">
-        <p className="eyebrow">Configuration</p>
-        <h3>Role-aware settings</h3>
-        <p>The backend returns only the starter sections the current persona can access.</p>
-      </div>
+    <Stack spacing={2}>
+      <SectionHeading eyebrow="Configuration" title="Role-aware settings" copy="The backend returns only the starter sections the current persona can access." />
 
-      <div className="stack">
-        {state.settingsSections.map((section) => (
-          <article key={section.key} className="settings-card">
-            <div className="settings-header">
-              <div>
-                <p className="section-label">{section.title}</p>
-                <h4>{section.description}</h4>
-              </div>
-            </div>
-
-            <div className="settings-fields">
+      {state.settingsSections.map((section) => (
+        <Paper key={section.key} sx={surfaceSx}>
+          <Stack spacing={2}>
+            <SectionHeading eyebrow={section.title} title={section.description} compact />
+            <Stack spacing={1.25}>
               {section.fields.map((field) => (
-                <div key={field.key} className="settings-row">
-                  <div>
-                    <strong>{field.label}</strong>
-                    <p>{field.type}</p>
-                  </div>
-                  <div className="settings-value">
-                    <span>{field.value ?? 'Not set'}</span>
-                    <span className={field.enabled ? 'field-state enabled' : 'field-state'}>{field.enabled ? 'Editable' : 'Locked'}</span>
-                  </div>
-                </div>
+                <ListRow
+                  key={field.key}
+                  title={field.label}
+                  subtitle={field.type}
+                  meta={[field.value ?? 'Not set', field.enabled ? 'Editable' : 'Locked']}
+                />
               ))}
-            </div>
-          </article>
-        ))}
-      </div>
-    </section>
+            </Stack>
+          </Stack>
+        </Paper>
+      ))}
+    </Stack>
   )
 }
 
@@ -361,40 +399,28 @@ function AdminUsersPage({ admin }: { admin: AdminState | null }) {
   }
 
   return (
-    <section className="page-section">
-      <div className="section-heading">
-        <p className="eyebrow">Administration</p>
-        <h3>User and role review</h3>
-        <p>This surface mirrors the administrative extension points from the frontend-ui starter.</p>
-      </div>
+    <Stack spacing={2}>
+      <SectionHeading eyebrow="Administration" title="User and role review" copy="This surface mirrors the administrative extension points from the starter." />
 
-      <div className="feature-grid">
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, minmax(0, 1fr))' }, gap: 2 }}>
         {admin.metrics.map((metric) => (
-          <article key={metric.key} className="feature-card">
-            <p className="section-label">{metric.label}</p>
-            <h4>{metric.value}</h4>
-            <p>{metric.detail}</p>
-          </article>
+          <FeatureCard key={metric.key} eyebrow={metric.label} title={metric.value} copy={metric.detail} />
         ))}
-      </div>
+      </Box>
 
-      <div className="stack">
-        {admin.users.map((user) => (
-          <article key={user.id} className="list-card">
-            <div>
-              <strong>{user.displayName}</strong>
-              <p>
-                {user.email} · {user.roles.join(', ')}
-              </p>
-            </div>
-            <div className="list-meta">
-              <span className="chip subtle">{user.status}</span>
-              <span className="muted-text">{user.lastActiveAt ? formatIsoDate(user.lastActiveAt) : 'Pending invite'}</span>
-            </div>
-          </article>
-        ))}
-      </div>
-    </section>
+      <Paper sx={surfaceSx}>
+        <Stack spacing={1.5}>
+          {admin.users.map((user) => (
+            <ListRow
+              key={user.id}
+              title={user.displayName}
+              subtitle={`${user.email} · ${user.roles.join(', ')}`}
+              meta={[user.status, user.lastActiveAt ? formatIsoDate(user.lastActiveAt) : 'Pending invite']}
+            />
+          ))}
+        </Stack>
+      </Paper>
+    </Stack>
   )
 }
 
@@ -404,40 +430,29 @@ function AdminAuditPage({ admin }: { admin: AdminState | null }) {
   }
 
   return (
-    <section className="page-section">
-      <div className="section-heading">
-        <p className="eyebrow">Governance</p>
-        <h3>Audit and policy timeline</h3>
-        <p>Workspace defaults and privileged actions come from the same persona-specific admin payload.</p>
-      </div>
+    <Stack spacing={2}>
+      <SectionHeading eyebrow="Governance" title="Audit and policy timeline" copy="Workspace defaults and privileged actions come from the same persona-specific admin payload." />
 
-      <article className="feature-card">
-        <p className="section-label">Workspace policy</p>
-        <h4>{admin.settings.requireMfa ? 'Multi-factor required' : 'Password only'}</h4>
-        <p>
-          Default role: {admin.settings.defaultRole} · Invite only: {admin.settings.inviteOnly ? 'yes' : 'no'} ·
-          Retention: {admin.settings.auditLogRetention}
-        </p>
-      </article>
+      <FeatureCard
+        eyebrow="Workspace policy"
+        title={admin.settings.requireMfa ? 'Multi-factor required' : 'Password only'}
+        copy={`Default role: ${admin.settings.defaultRole} · Invite only: ${admin.settings.inviteOnly ? 'yes' : 'no'} · Retention: ${admin.settings.auditLogRetention}`}
+      />
 
-      <div className="stack">
-        {admin.auditEvents.map((event) => (
-          <article key={event.id} className="list-card">
-            <div>
-              <strong>{event.action}</strong>
-              <p>
-                {event.actorName} targeted {event.target}
-              </p>
-              <p className="muted-text">{event.description}</p>
-            </div>
-            <div className="list-meta">
-              <span className={`chip subtle severity-${event.severity}`}>{event.severity}</span>
-              <span className="muted-text">{formatIsoDate(event.createdAt)}</span>
-            </div>
-          </article>
-        ))}
-      </div>
-    </section>
+      <Paper sx={surfaceSx}>
+        <Stack spacing={1.5}>
+          {admin.auditEvents.map((event) => (
+            <ListRow
+              key={event.id}
+              title={event.action}
+              subtitle={`${event.actorName} targeted ${event.target}`}
+              detail={event.description}
+              meta={[event.severity, formatIsoDate(event.createdAt)]}
+            />
+          ))}
+        </Stack>
+      </Paper>
+    </Stack>
   )
 }
 
@@ -445,162 +460,419 @@ function AccountCard({ state }: { state: DevState }) {
   const user = state.session.user
 
   return (
-    <article className="account-card">
-      <div className="account-header">
-        <p className="section-label">Account</p>
-        <span className={state.session.status === 'authenticated' ? 'live-dot' : 'live-dot muted'} />
-      </div>
-      <h3>{user?.displayName ?? 'Guest preview'}</h3>
-      <p>{user?.title ?? state.session.error ?? 'Public shell with no private data.'}</p>
-      <div className="chip-row">
-        {(user?.roles ?? [state.session.status]).map((value) => (
-          <span key={value} className="chip">
-            {value}
-          </span>
-        ))}
-      </div>
-    </article>
+    <Paper
+      sx={{
+        ...surfaceSx,
+        color: '#edf5f7',
+        background: 'linear-gradient(145deg, rgba(14, 30, 42, 0.96), rgba(31, 70, 77, 0.88))',
+      }}
+    >
+      <Stack spacing={2}>
+        <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }}>
+          <Typography variant="overline" sx={{ color: '#ffb197' }}>
+            Account
+          </Typography>
+          <Chip
+            size="small"
+            label={state.session.status === 'authenticated' ? 'Live' : 'Preview'}
+            sx={{
+              color: '#edf5f7',
+              backgroundColor: state.session.status === 'authenticated' ? alpha('#75f4c8', 0.22) : alpha('#f3b070', 0.22),
+            }}
+          />
+        </Stack>
+        <Typography variant="h4">{user?.displayName ?? 'Guest preview'}</Typography>
+        <Typography sx={{ color: 'rgba(237, 245, 247, 0.82)', lineHeight: 1.7 }}>
+          {user?.title ?? state.session.error ?? 'Public shell with no private data.'}
+        </Typography>
+        <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap' }}>
+          {(user?.roles ?? [state.session.status]).map((value) => (
+            <Chip key={value} label={value} color="secondary" />
+          ))}
+        </Stack>
+      </Stack>
+    </Paper>
   )
 }
 
 function MetricsPanel({ metrics }: { metrics: DevState['metrics'] }) {
   return (
-    <section className="metrics-panel">
+    <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 2 }}>
       {metrics.map((metric) => (
-        <article key={metric.key} className="metric-card">
-          <p>{metric.label}</p>
-          <strong>{metric.value}</strong>
-          <span>{metric.detail}</span>
-        </article>
+        <Paper key={metric.key} sx={surfaceSx}>
+          <Stack spacing={0.75}>
+            <Typography color="text.secondary">{metric.label}</Typography>
+            <Typography variant="h4">{metric.value}</Typography>
+            <Typography variant="body2" color="text.secondary">
+              {metric.detail}
+            </Typography>
+          </Stack>
+        </Paper>
       ))}
-    </section>
+    </Box>
   )
 }
 
 function ActivityPanel({ activity }: { activity: ActivityItem[] }) {
   return (
-    <section className="rail-card">
-      <div className="section-heading compact">
-        <p className="eyebrow">Recent activity</p>
-        <h3>Live shell feed</h3>
-      </div>
-
-      <div className="stack">
-        {activity.map((item) => (
-          <article key={item.id} className="timeline-item">
-            <strong>{item.title}</strong>
-            <p>{item.detail}</p>
-            <span>{item.timestamp}</span>
-          </article>
-        ))}
-      </div>
-    </section>
+    <Paper sx={surfaceSx}>
+      <Stack spacing={2}>
+        <SectionHeading eyebrow="Recent activity" title="Live shell feed" compact />
+        <Stack spacing={1.5}>
+          {activity.map((item) => (
+            <Box key={item.id}>
+              <Stack spacing={0.5}>
+                <Typography sx={{ fontWeight: 700 }}>{item.title}</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {item.detail}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {item.timestamp}
+                </Typography>
+              </Stack>
+              <Divider sx={{ mt: 1.5 }} />
+            </Box>
+          ))}
+        </Stack>
+      </Stack>
+    </Paper>
   )
 }
 
 function ApiContractPanel({ state }: { state: DevState }) {
-  return (
-    <section className="rail-card">
-      <div className="section-heading compact">
-        <p className="eyebrow">Contract</p>
-        <h3>Backend shape</h3>
-      </div>
+  const lines = [
+    `persona: "${state.persona}"`,
+    `session.status: "${state.session.status}"`,
+    `navigation: ${state.navigation.length} categories`,
+    `settingsSections: ${state.settingsSections.length}`,
+    `followers: ${state.followers.length}`,
+  ]
 
-      <div className="contract-lines">
-        <code>persona: "{state.persona}"</code>
-        <code>session.status: "{state.session.status}"</code>
-        <code>navigation: {state.navigation.length} categories</code>
-        <code>settingsSections: {state.settingsSections.length}</code>
-        <code>followers: {state.followers.length}</code>
-      </div>
-    </section>
+  return (
+    <Paper sx={surfaceSx}>
+      <Stack spacing={2}>
+        <SectionHeading eyebrow="Contract" title="Backend shape" compact />
+        <Stack spacing={1}>
+          {lines.map((line) => (
+            <Paper key={line} variant="outlined" sx={{ p: 1.25, borderRadius: 3, backgroundColor: alpha('#0f766e', 0.05) }}>
+              <Typography component="code" sx={{ fontFamily: '"IBM Plex Mono", "SFMono-Regular", monospace', fontSize: '0.88rem' }}>
+                {line}
+              </Typography>
+            </Paper>
+          ))}
+        </Stack>
+      </Stack>
+    </Paper>
   )
 }
 
+const WorkspaceNotesPanel = observer(function WorkspaceNotesPanel() {
+  const appStore = useAppStore()
+  const { creatingNote, noteDraft: draft, notes, notesError: error, notesLoading: loading } = appStore
+  const remaining = 280 - draft.length
+
+  return (
+    <Paper sx={surfaceSx}>
+      <Stack spacing={2}>
+        <SectionHeading eyebrow="Persistence" title="Workspace notes" compact />
+        <Typography variant="body2" color="text.secondary">
+          Notes in this panel are persisted through the C# API into your local Postgres database.
+        </Typography>
+        <TextField
+          label="New note"
+          multiline
+          minRows={3}
+          value={draft}
+          onChange={(event) => appStore.setNoteDraft(event.target.value)}
+          error={draft.length > 280}
+          helperText={`${remaining} characters remaining`}
+        />
+        <Button
+          variant="contained"
+          color="primary"
+          startIcon={<SaveRounded />}
+          disabled={creatingNote || !draft.trim() || draft.length > 280}
+          onClick={() => void appStore.createNote()}
+        >
+          {creatingNote ? 'Saving...' : 'Save to Postgres'}
+        </Button>
+        {error ? <Alert severity="error">Notes request failed: {error}</Alert> : null}
+        {loading ? (
+          <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
+            <CircularProgress size={18} />
+            <Typography variant="body2">Loading saved notes...</Typography>
+          </Stack>
+        ) : null}
+        {!loading && notes.length === 0 ? (
+          <Alert severity="info">No notes saved yet. Create one here and it will persist locally in Postgres.</Alert>
+        ) : null}
+        <Stack spacing={1.25}>
+          {notes.map((note) => (
+            <WorkspaceNoteRow key={note.id} note={note} />
+          ))}
+        </Stack>
+      </Stack>
+    </Paper>
+  )
+})
+
+const WorkspaceNoteRow = observer(function WorkspaceNoteRow({ note }: { note: WorkspaceNote }) {
+  const appStore = useAppStore()
+  const editDraft = appStore.editDrafts.get(note.id)
+  const updating = appStore.isUpdatingNote(note.id)
+  const deleting = appStore.isDeletingNote(note.id)
+  const editMessage = editDraft?.message ?? ''
+  const editRemaining = 280 - editMessage.length
+  const saveDisabled = updating || deleting || !editMessage.trim() || editMessage.length > 280
+
+  if (editDraft) {
+    return (
+      <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 4 }}>
+        <Stack spacing={1.25}>
+          <TextField
+            label="Message"
+            multiline
+            minRows={2}
+            value={editDraft.message}
+            onChange={(event) => appStore.setNoteEditDraft(note.id, 'message', event.target.value)}
+            error={editDraft.message.length > 280}
+            helperText={`${editRemaining} characters remaining`}
+          />
+          <TextField
+            label="Created by"
+            value={editDraft.createdBy ?? ''}
+            slotProps={{ htmlInput: { maxLength: 120 } }}
+            onChange={(event) => appStore.setNoteEditDraft(note.id, 'createdBy', event.target.value)}
+          />
+          <TextField
+            select
+            label="Persona"
+            value={editDraft.persona ?? 'unknown'}
+            onChange={(event) => appStore.setNoteEditDraft(note.id, 'persona', event.target.value)}
+          >
+            <MenuItem value="unknown">unknown</MenuItem>
+            {personas.map((persona) => (
+              <MenuItem key={persona} value={persona}>
+                {persona}
+              </MenuItem>
+            ))}
+          </TextField>
+          <Stack direction="row" spacing={1} sx={{ justifyContent: 'flex-end' }}>
+            <Button
+              variant="outlined"
+              startIcon={<CancelRounded />}
+              disabled={updating}
+              onClick={() => appStore.cancelEditingNote(note.id)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="contained"
+              startIcon={<CheckRounded />}
+              disabled={saveDisabled}
+              onClick={() => void appStore.updateNote(note.id)}
+            >
+              {updating ? 'Saving...' : 'Save changes'}
+            </Button>
+          </Stack>
+        </Stack>
+      </Paper>
+    )
+  }
+
+  return (
+    <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 4 }}>
+      <Stack spacing={1}>
+        <Stack direction="row" spacing={1} sx={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <Typography>{note.message}</Typography>
+          <Stack direction="row" spacing={0.5}>
+            <Tooltip title="Edit note">
+              <span>
+                <IconButton
+                  size="small"
+                  aria-label={`Edit note ${note.id}`}
+                  disabled={deleting}
+                  onClick={() => appStore.startEditingNote(note)}
+                >
+                  <EditRounded fontSize="small" />
+                </IconButton>
+              </span>
+            </Tooltip>
+            <Tooltip title="Delete note">
+              <span>
+                <IconButton
+                  size="small"
+                  aria-label={`Delete note ${note.id}`}
+                  color="error"
+                  disabled={deleting}
+                  onClick={() => void appStore.deleteNote(note.id)}
+                >
+                  {deleting ? <CircularProgress size={16} /> : <DeleteRounded fontSize="small" />}
+                </IconButton>
+              </span>
+            </Tooltip>
+          </Stack>
+        </Stack>
+        <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap', alignItems: 'center' }}>
+          <Chip size="small" label={note.createdBy} icon={<PersonRounded />} />
+          <Chip size="small" label={note.persona} color="secondary" variant="outlined" />
+          <Typography variant="caption" color="text.secondary">
+            {formatIsoDate(note.createdAt)}
+          </Typography>
+        </Stack>
+      </Stack>
+    </Paper>
+  )
+})
+
 function PermissionPanel({ permissions }: { permissions: string[] }) {
   return (
-    <section className="rail-card">
-      <div className="section-heading compact">
-        <p className="eyebrow">Access</p>
-        <h3>Resolved permissions</h3>
-      </div>
-
-      <div className="chip-row">
-        {permissions.map((permission) => (
-          <span key={permission} className="chip subtle">
-            {permission}
-          </span>
-        ))}
-      </div>
-    </section>
+    <Paper sx={surfaceSx}>
+      <Stack spacing={2}>
+        <SectionHeading eyebrow="Access" title="Resolved permissions" compact />
+        <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap' }}>
+          {permissions.map((permission) => (
+            <Chip key={permission} label={permission} variant="outlined" />
+          ))}
+        </Stack>
+      </Stack>
+    </Paper>
   )
 }
 
 function GuardedEmptyState({ title, copy }: { title: string; copy: string }) {
   return (
-    <section className="page-section">
-      <article className="empty-card">
-        <p className="section-label">Guarded view</p>
-        <h3>{title}</h3>
-        <p>{copy}</p>
-      </article>
-    </section>
+    <Paper sx={surfaceSx}>
+      <Stack spacing={1.25}>
+        <Typography variant="overline" color="secondary.main">
+          Guarded view
+        </Typography>
+        <Typography variant="h5">{title}</Typography>
+        <Typography color="text.secondary">{copy}</Typography>
+      </Stack>
+    </Paper>
   )
 }
 
-function StatusPill({ label, value }: { label: string; value: string }) {
+function SectionHeading({
+  compact = false,
+  copy,
+  eyebrow,
+  title,
+}: {
+  compact?: boolean
+  copy?: string
+  eyebrow: string
+  title: string
+}) {
   return (
-    <div className="status-pill">
-      <span>{label}</span>
-      <strong>{value}</strong>
-    </div>
+    <Stack spacing={compact ? 0.5 : 0.75}>
+      <Typography variant="overline" color="secondary.main">
+        {eyebrow}
+      </Typography>
+      <Typography variant={compact ? 'h6' : 'h4'}>{title}</Typography>
+      {copy ? (
+        <Typography color="text.secondary" sx={{ lineHeight: 1.7 }}>
+          {copy}
+        </Typography>
+      ) : null}
+    </Stack>
   )
 }
 
-function ErrorBanner({ message }: { message: string }) {
+function FeatureCard({
+  copy,
+  eyebrow,
+  footer,
+  title,
+}: {
+  copy: string
+  eyebrow: string
+  footer?: ReactNode
+  title: string
+}) {
   return (
-    <div className="error-banner" role="alert">
-      <strong>Request failed.</strong>
-      <span>{message}</span>
-    </div>
+    <Paper sx={surfaceSx}>
+      <Stack spacing={1.25}>
+        <Typography variant="overline" color="secondary.main">
+          {eyebrow}
+        </Typography>
+        <Typography variant="h6">{title}</Typography>
+        <Typography color="text.secondary" sx={{ lineHeight: 1.7 }}>
+          {copy}
+        </Typography>
+        {footer}
+      </Stack>
+    </Paper>
   )
 }
 
-function LoadingState() {
+function ListRow({
+  detail,
+  meta,
+  subtitle,
+  title,
+}: {
+  detail?: string
+  meta: string[]
+  subtitle: string
+  title: string
+}) {
   return (
-    <section className="loading-state" aria-live="polite">
-      <div className="loading-pulse" />
-      <p>Loading starter state from the .NET Web API…</p>
-    </section>
+    <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 4 }}>
+      <Stack
+        direction={{ xs: 'column', md: 'row' }}
+        spacing={1.5}
+        sx={{
+          justifyContent: 'space-between',
+          alignItems: { xs: 'flex-start', md: 'center' },
+        }}
+      >
+        <Stack spacing={0.5}>
+          <Typography sx={{ fontWeight: 700 }}>{title}</Typography>
+          <Typography variant="body2" color="text.secondary">
+            {subtitle}
+          </Typography>
+          {detail ? (
+            <Typography variant="body2" color="text.secondary">
+              {detail}
+            </Typography>
+          ) : null}
+        </Stack>
+        <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap' }}>
+          {meta.map((value) => (
+            <Chip key={value} label={value} variant="outlined" />
+          ))}
+        </Stack>
+      </Stack>
+    </Paper>
   )
 }
 
-function hasNavigationItem(categories: NavigationCategory[], targetPath: string) {
-  return categories.some((category) => category.items.some((item) => item.href === targetPath))
-}
-
-function getDefaultPath(categories: NavigationCategory[]) {
-  return categories[0]?.items[0]?.href ?? '/overview'
-}
-
-function findNavigationItem(categories: NavigationCategory[], targetPath: string): NavigationItem | null {
-  for (const category of categories) {
-    const found = category.items.find((item) => item.href === targetPath)
-
-    if (found) {
-      return found
-    }
-  }
-
-  return null
-}
-
-function formatSessionStatus(status: DevState['session']['status'] | undefined) {
-  if (!status) {
-    return 'loading'
-  }
-
-  return status.replace('-', ' ')
+function StatusPill({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
+  return (
+    <Paper
+      sx={{
+        px: 1.5,
+        py: 1.25,
+        borderRadius: 4,
+        minWidth: 118,
+        backgroundColor: alpha('#fff', 0.74),
+      }}
+    >
+      <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+        {icon}
+        <Box>
+          <Typography variant="caption" color="text.secondary">
+            {label}
+          </Typography>
+          <Typography sx={{ fontWeight: 700, textTransform: 'capitalize' }}>
+            {value}
+          </Typography>
+        </Box>
+      </Stack>
+    </Paper>
+  )
 }
 
 function formatIsoDate(value: string) {

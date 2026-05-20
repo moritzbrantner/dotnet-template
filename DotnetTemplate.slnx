@@ -2,4 +2,7 @@
   <Folder Name="/src/">
     <Project Path="src/DotnetTemplate.Api/DotnetTemplate.Api.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/DotnetTemplate.Api.Tests/DotnetTemplate.Api.Tests.csproj" />
+  </Folder>
 </Solution>

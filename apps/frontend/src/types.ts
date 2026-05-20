@@ -130,3 +130,23 @@ export type AdminWorkspaceSettings = {
   auditLogRetention: string
   requireMfa: boolean
 }
+
+export type WorkspaceNote = {
+  id: number
+  message: string
+  createdBy: string
+  persona: string
+  createdAt: string
+}
+
+export type CreateWorkspaceNoteRequest = {
+  message: string
+  createdBy?: string | null
+  persona?: Persona | string | null
+}
+
+export type UpdateWorkspaceNoteRequest = {
+  message: string
+  createdBy?: string | null
+  persona?: Persona | string | null
+}

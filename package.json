@@ -5,7 +5,22 @@
     "dev": "concurrently --kill-others-on-fail --names api,web --prefix-colors blue,green \"dotnet watch --project src/DotnetTemplate.Api run --launch-profile http\" \"npm --prefix apps/frontend run dev\"",
     "dev:api": "dotnet watch --project src/DotnetTemplate.Api run --launch-profile http",
     "dev:web": "npm --prefix apps/frontend run dev",
-    "postinstall": "npm --prefix apps/frontend install"
+    "dev:db": "docker compose up postgres -d",
+    "dev:db:stop": "docker compose stop postgres",
+    "storybook": "npm --prefix apps/frontend run storybook",
+    "build-storybook": "npm --prefix apps/frontend run build-storybook",
+    "test": "npm run test:api && npm run test:web",
+    "test:api": "dotnet test DotnetTemplate.slnx",
+    "test:web": "npm --prefix apps/frontend run test:run",
+    "test:web:e2e": "npm --prefix apps/frontend run test:e2e",
+    "db:migrate": "dotnet tool restore && dotnet ef database update --project src/DotnetTemplate.Api --startup-project src/DotnetTemplate.Api",
+    "postinstall": "npm --prefix apps/frontend install",
+    "services:up": "docker compose up -d postgres",
+    "services:down": "docker compose stop postgres",
+    "services:clean": "docker compose down -v --remove-orphans",
+    "services:ps": "docker compose ps",
+    "check:hygiene": "bash scripts/check_repo_hygiene.sh",
+    "test:with-services": "COMPOSE_SERVICES=\"postgres\" bash scripts/run-with-compose-services.sh npm run test"
   },
   "devDependencies": {
     "concurrently": "^9.2.1"
