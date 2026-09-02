@@ -69,6 +69,38 @@ public sealed class ApiTests(PostgresFixture postgres) : IClassFixture<PostgresF
         Assert.Equal("admin", note.Persona);
     }
 
+    [Fact]
+    public async Task CreateNote_AcceptsExactMessageAndCreatedByLengthLimits()
+    {
+        var message = new string('m', 280);
+        var createdBy = new string('c', 120);
+
+        var response = await Client.PostAsJsonAsync(
+            "/api/notes",
+            new CreateWorkspaceNoteRequest(message, createdBy, "admin"));
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        var note = await response.Content.ReadFromJsonAsync<WorkspaceNoteDto>(JsonOptions);
+        Assert.NotNull(note);
+        Assert.Equal(message, note.Message);
+        Assert.Equal(createdBy, note.CreatedBy);
+        Assert.Equal("admin", note.Persona);
+    }
+
+    [Fact]
+    public async Task CreateNote_DefaultsBlankOptionalFields()
+    {
+        var response = await Client.PostAsJsonAsync(
+            "/api/notes",
+            new CreateWorkspaceNoteRequest("hello", "   ", null));
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        var note = await response.Content.ReadFromJsonAsync<WorkspaceNoteDto>(JsonOptions);
+        Assert.NotNull(note);
+        Assert.Equal("Local developer", note.CreatedBy);
+        Assert.Equal("unknown", note.Persona);
+    }
+
     [Theory]
     [InlineData(null)]
     [InlineData("")]
