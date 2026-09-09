@@ -2,12 +2,14 @@
   "schemaVersion": 1,
   "profile": "repository-foundation-v1",
   "tiers": {
-    "fast": ["test"],
-    "standard": ["test"]
+    "fast": ["lint", "typecheck", "test"],
+    "standard": ["lint", "typecheck", "test"]
   },
-  "requiredCapabilities": ["test"],
+  "requiredCapabilities": ["lint", "typecheck", "test"],
   "capabilityCommands": {
     ".": {
+      "lint": ["npm", "run", "lint"],
+      "typecheck": ["npm", "run", "typecheck"],
       "test": ["npm", "run", "test"]
     }
   },
