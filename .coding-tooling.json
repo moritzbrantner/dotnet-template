@@ -10,7 +10,7 @@
     ".": {
       "lint": ["npm", "run", "lint"],
       "typecheck": ["npm", "run", "typecheck"],
-      "test": ["npm", "run", "test"]
+      "test": ["npm", "run", "test:with-services"]
     }
   },
   "merge": {
