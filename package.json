@@ -15,6 +15,7 @@
     "test:api": "dotnet test DotnetTemplate.slnx",
     "test:web": "npm --prefix apps/frontend run test:run",
     "test:web:e2e": "npm --prefix apps/frontend run test:e2e",
+    "verify:api": "bash scripts/verify_dotnet.sh",
     "db:migrate": "dotnet tool restore && dotnet ef database update --project src/DotnetTemplate.Api --startup-project src/DotnetTemplate.Api",
     "postinstall": "npm --prefix apps/frontend install",
     "services:up": "docker compose up -d postgres",
