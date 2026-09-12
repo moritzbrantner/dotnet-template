@@ -9,6 +9,8 @@
     "dev:db:stop": "docker compose stop postgres",
     "storybook": "npm --prefix apps/frontend run storybook",
     "build-storybook": "npm --prefix apps/frontend run build-storybook",
+    "lint": "npm --prefix apps/frontend run lint",
+    "typecheck": "npm --prefix apps/frontend run typecheck",
     "test": "npm run test:api && npm run test:web",
     "test:api": "dotnet test DotnetTemplate.slnx",
     "test:web": "npm --prefix apps/frontend run test:run",
