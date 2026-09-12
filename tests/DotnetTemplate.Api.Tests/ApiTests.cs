@@ -8,7 +8,7 @@ using Xunit;
 
 namespace DotnetTemplate.Api.Tests;
 
-public sealed class ApiTests(PostgresFixture postgres) : IClassFixture<PostgresFixture>, IAsyncLifetime
+public sealed class ApiTests(PostgresFixture postgres) : IClassFixture<PostgresFixture>, IAsyncLifetime, IDisposable
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
     private readonly ApiFactory _factory = new(postgres.ConnectionString);
@@ -21,12 +21,18 @@ public sealed class ApiTests(PostgresFixture postgres) : IClassFixture<PostgresF
 
     public Task DisposeAsync()
     {
-        _factory.Dispose();
+        Dispose();
         return Task.CompletedTask;
     }
 
+    public void Dispose()
+    {
+        _factory.Dispose();
+        GC.SuppressFinalize(this);
+    }
+
     [Fact]
-    public async Task Health_ReturnsOkAndConnectedDatabase_WhenPostgresIsAvailable()
+    public async Task HealthReturnsOkAndConnectedDatabaseWhenPostgresIsAvailable()
     {
         var document = await GetJsonDocumentAsync("/api/health");
 
@@ -35,7 +41,7 @@ public sealed class ApiTests(PostgresFixture postgres) : IClassFixture<PostgresF
     }
 
     [Fact]
-    public async Task DevState_Admin_IncludesAdminState()
+    public async Task DevStateAdminIncludesAdminState()
     {
         var document = await GetJsonDocumentAsync("/api/dev-state?persona=admin");
 
@@ -44,7 +50,7 @@ public sealed class ApiTests(PostgresFixture postgres) : IClassFixture<PostgresF
     }
 
     [Fact]
-    public async Task DevState_Anonymous_HidesPrivateAuthenticatedData()
+    public async Task DevStateAnonymousHidesPrivateAuthenticatedData()
     {
         var document = await GetJsonDocumentAsync("/api/dev-state?persona=anonymous");
 
@@ -55,7 +61,7 @@ public sealed class ApiTests(PostgresFixture postgres) : IClassFixture<PostgresF
     }
 
     [Fact]
-    public async Task CreateNote_ReturnsCreatedNote()
+    public async Task CreateNoteReturnsCreatedNote()
     {
         var response = await Client.PostAsJsonAsync("/api/notes", new CreateWorkspaceNoteRequest(" hello ", null, "ADMIN"));
 
@@ -70,7 +76,7 @@ public sealed class ApiTests(PostgresFixture postgres) : IClassFixture<PostgresF
     }
 
     [Fact]
-    public async Task CreateNote_AcceptsExactMessageAndCreatedByLengthLimits()
+    public async Task CreateNoteAcceptsExactMessageAndCreatedByLengthLimits()
     {
         var message = new string('m', 280);
         var createdBy = new string('c', 120);
@@ -88,7 +94,7 @@ public sealed class ApiTests(PostgresFixture postgres) : IClassFixture<PostgresF
     }
 
     [Fact]
-    public async Task CreateNote_DefaultsBlankOptionalFields()
+    public async Task CreateNoteDefaultsBlankOptionalFields()
     {
         var response = await Client.PostAsJsonAsync(
             "/api/notes",
@@ -105,7 +111,7 @@ public sealed class ApiTests(PostgresFixture postgres) : IClassFixture<PostgresF
     [InlineData(null)]
     [InlineData("")]
     [InlineData("   ")]
-    public async Task CreateNote_RejectsMissingMessage(string? message)
+    public async Task CreateNoteRejectsMissingMessage(string? message)
     {
         var response = await Client.PostAsJsonAsync("/api/notes", new CreateWorkspaceNoteRequest(message!, "Tester", "user"));
 
@@ -114,7 +120,7 @@ public sealed class ApiTests(PostgresFixture postgres) : IClassFixture<PostgresF
     }
 
     [Fact]
-    public async Task CreateNote_RejectsNullBody()
+    public async Task CreateNoteRejectsNullBody()
     {
         using var content = new StringContent("null", Encoding.UTF8, "application/json");
 
@@ -125,7 +131,7 @@ public sealed class ApiTests(PostgresFixture postgres) : IClassFixture<PostgresF
     }
 
     [Fact]
-    public async Task CreateNote_RejectsOverlongMessage()
+    public async Task CreateNoteRejectsOverlongMessage()
     {
         var response = await Client.PostAsJsonAsync("/api/notes", new CreateWorkspaceNoteRequest(new string('a', 281), "Tester", "user"));
 
@@ -134,7 +140,7 @@ public sealed class ApiTests(PostgresFixture postgres) : IClassFixture<PostgresF
     }
 
     [Fact]
-    public async Task CreateNote_RejectsInvalidPersona()
+    public async Task CreateNoteRejectsInvalidPersona()
     {
         var response = await Client.PostAsJsonAsync("/api/notes", new CreateWorkspaceNoteRequest("hello", "Tester", "manager"));
 
@@ -143,7 +149,7 @@ public sealed class ApiTests(PostgresFixture postgres) : IClassFixture<PostgresF
     }
 
     [Fact]
-    public async Task ListNotes_ReturnsNewestFirstAndLimitsToTwentyFive()
+    public async Task ListNotesReturnsNewestFirstAndLimitsToTwentyFive()
     {
         var notes = Enumerable.Range(1, 30).Select(index => new WorkspaceNoteEntity
         {
@@ -163,7 +169,7 @@ public sealed class ApiTests(PostgresFixture postgres) : IClassFixture<PostgresF
     }
 
     [Fact]
-    public async Task GetNote_ReturnsNotFound_WhenMissing()
+    public async Task GetNoteReturnsNotFoundWhenMissing()
     {
         var response = await Client.GetAsync("/api/notes/404");
 
@@ -171,7 +177,7 @@ public sealed class ApiTests(PostgresFixture postgres) : IClassFixture<PostgresF
     }
 
     [Fact]
-    public async Task UpdateNote_UpdatesFieldsAndValidatesPayload()
+    public async Task UpdateNoteUpdatesFieldsAndValidatesPayload()
     {
         var created = await CreateNoteAsync("before", "Alice", "user");
 
@@ -192,7 +198,7 @@ public sealed class ApiTests(PostgresFixture postgres) : IClassFixture<PostgresF
     }
 
     [Fact]
-    public async Task UpdateNote_ReturnsNotFound_WhenMissing()
+    public async Task UpdateNoteReturnsNotFoundWhenMissing()
     {
         var response = await Client.PutAsJsonAsync("/api/notes/404", new UpdateWorkspaceNoteRequest("after", "Bob", "member"));
 
@@ -200,7 +206,7 @@ public sealed class ApiTests(PostgresFixture postgres) : IClassFixture<PostgresF
     }
 
     [Fact]
-    public async Task DeleteNote_RemovesNote()
+    public async Task DeleteNoteRemovesNote()
     {
         var created = await CreateNoteAsync("delete me", "Alice", "user");
 
@@ -212,7 +218,7 @@ public sealed class ApiTests(PostgresFixture postgres) : IClassFixture<PostgresF
     }
 
     [Fact]
-    public async Task DeleteNote_ReturnsNotFound_WhenMissing()
+    public async Task DeleteNoteReturnsNotFoundWhenMissing()
     {
         var response = await Client.DeleteAsync("/api/notes/404");
 
@@ -220,7 +226,7 @@ public sealed class ApiTests(PostgresFixture postgres) : IClassFixture<PostgresF
     }
 
     [Fact]
-    public async Task Health_ReturnsOkAndDisconnectedDatabase_WhenPostgresIsUnavailable()
+    public async Task HealthReturnsOkAndDisconnectedDatabaseWhenPostgresIsUnavailable()
     {
         using var factory = new ApiFactory("Host=localhost;Port=1;Database=missing;Username=postgres;Password=postgres;Timeout=1;Command Timeout=1");
         using var client = factory.CreateClient();

@@ -1,3 +1,4 @@
+using System.Globalization;
 using DotnetTemplate.Api.Models;
 
 namespace DotnetTemplate.Api.Services;
@@ -46,7 +47,7 @@ public sealed class StarterDemoService
         };
     }
 
-    private static IReadOnlyList<NavigationCategory> CreateNavigation(AuthSession session)
+    private static List<NavigationCategory> CreateNavigation(AuthSession session)
     {
         var workspace = new List<NavigationItem>
         {
@@ -93,7 +94,7 @@ public sealed class StarterDemoService
         return categories;
     }
 
-    private static IReadOnlyList<SettingsSection> CreateSettingsSections(AuthSession session)
+    private static List<SettingsSection> CreateSettingsSections(AuthSession session)
     {
         if (session.Status != "authenticated")
         {
@@ -199,7 +200,7 @@ public sealed class StarterDemoService
         };
     }
 
-    private static IReadOnlyList<ProfileFollower> CreateFollowers(string persona, AuthSession session)
+    private static List<ProfileFollower> CreateFollowers(string persona, AuthSession session)
     {
         if (session.Status != "authenticated")
         {
@@ -221,7 +222,7 @@ public sealed class StarterDemoService
         return followers;
     }
 
-    private static IReadOnlyList<TeamMember> CreateTeamMembers(AuthSession session)
+    private static List<TeamMember> CreateTeamMembers(AuthSession session)
     {
         if (session.Status != "authenticated")
         {
@@ -256,8 +257,8 @@ public sealed class StarterDemoService
         return new AdminState(
             Metrics:
             [
-                new MetricCard("users", "Users", users.Length.ToString(), "Total workspace accounts"),
-                new MetricCard("admins", "Admins", users.Count(user => user.Roles.Contains("admin")).ToString(), "Users with admin access"),
+                new MetricCard("users", "Users", users.Length.ToString(CultureInfo.InvariantCulture), "Total workspace accounts"),
+                new MetricCard("admins", "Admins", users.Count(user => user.Roles.Contains("admin")).ToString(CultureInfo.InvariantCulture), "Users with admin access"),
                 new MetricCard("audit", "Audit events", "4", "Recent privileged actions")
             ],
             Users: users,

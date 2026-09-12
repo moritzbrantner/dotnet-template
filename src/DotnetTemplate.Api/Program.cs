@@ -252,12 +252,12 @@ static async Task InitializeDatabaseAsync(IServiceProvider services, IConfigurat
         }
         catch (Exception ex) when (attempt < maxAttempts)
         {
-            logger.LogWarning(ex, "Database initialization attempt {Attempt} failed. Retrying.", attempt);
+            AppLog.DatabaseInitializationRetry(logger, attempt, ex);
             await Task.Delay(retryDelay);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Database migration failed after {MaxAttempts} attempt(s). Continuing startup without database availability.", maxAttempts);
+            AppLog.DatabaseMigrationFailed(logger, maxAttempts, ex);
             return;
         }
     }
@@ -379,6 +379,21 @@ internal sealed record NoteValidationResult
     public string CreatedBy { get; }
     public string Persona { get; }
     public IReadOnlyDictionary<string, string[]> Errors { get; }
+}
+
+internal static partial class AppLog
+{
+    [LoggerMessage(
+        EventId = 1001,
+        Level = LogLevel.Warning,
+        Message = "Database initialization attempt {Attempt} failed. Retrying.")]
+    internal static partial void DatabaseInitializationRetry(ILogger logger, int attempt, Exception exception);
+
+    [LoggerMessage(
+        EventId = 1002,
+        Level = LogLevel.Error,
+        Message = "Database migration failed after {MaxAttempts} attempt(s). Continuing startup without database availability.")]
+    internal static partial void DatabaseMigrationFailed(ILogger logger, int maxAttempts, Exception exception);
 }
 
 public partial class Program;
