@@ -26,6 +26,6 @@
     "test:with-services": "COMPOSE_SERVICES=\"postgres\" bash scripts/run-with-compose-services.sh npm run test"
   },
   "devDependencies": {
-    "concurrently": "9.2.1"
+    "concurrently": "9.2.5"
   }
 }
