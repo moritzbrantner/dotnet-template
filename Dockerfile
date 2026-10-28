@@ -1,4 +1,4 @@
-FROM node:22-bookworm-slim@sha256:de170b39439eb0e5a3444ad7d60b015614a381e10fecae2e30ec9e735122f38d AS frontend-build
+FROM node:22-bookworm-slim@sha256:3ed748ce9dea62d2f0f0205cdbb6823106d9f973a6f555c402fe2575f8d6e1ae AS frontend-build
 WORKDIR /src/apps/frontend
 
 COPY apps/frontend/package.json apps/frontend/package-lock.json ./
